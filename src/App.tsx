@@ -2,11 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import mermaid from 'mermaid'
-import { ZoomIn, ZoomOut, Move, Maximize2, Eye, Copy, Download, Palette } from 'lucide-react'
+import { ZoomIn, ZoomOut, Move, Maximize2, Eye, Copy, Download, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import './App.css'
 
 mermaid.initialize({ 
-  startOnLoad: true,
+  startOnLoad: false,
   theme: 'default',
   securityLevel: 'loose',
   fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -27,13 +27,52 @@ const MermaidComponent = ({ chart, id }: MermaidComponentProps) => {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [theme, setTheme] = useState('default')
+  const [svgContent, setSvgContent] = useState('')
 
   useEffect(() => {
-    if (mermaidRef.current) {
-      mermaidRef.current.innerHTML = chart
-      mermaid.init({ theme }, mermaidRef.current)
+    const renderDiagram = async () => {
+      if (mermaidRef.current && chart.trim()) {
+        try {
+          // Clear previous content
+          mermaidRef.current.innerHTML = ''
+          
+          // Generate unique ID for this diagram
+          const diagramId = `mermaid-${id}-${Date.now()}`
+          
+          // Configure mermaid with current theme
+          mermaid.initialize({ 
+            startOnLoad: false,
+            theme: theme,
+            securityLevel: 'loose',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            fontSize: 16
+          })
+          
+          // Render the diagram
+          const { svg } = await mermaid.render(diagramId, chart)
+          setSvgContent(svg)
+          
+          // Insert the SVG into the container
+          if (mermaidRef.current) {
+            mermaidRef.current.innerHTML = svg
+          }
+        } catch (error) {
+          console.error('Mermaid rendering error:', error)
+          if (mermaidRef.current) {
+            mermaidRef.current.innerHTML = `
+              <div style="padding: 2rem; text-align: center; color: #e53e3e; background: #fed7d7; border-radius: 8px;">
+                <p><strong>Mermaid Diagram Error</strong></p>
+                <p>Failed to render diagram. Please check the syntax.</p>
+                <pre style="text-align: left; margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.1); border-radius: 4px; font-size: 12px;">${chart}</pre>
+              </div>
+            `
+          }
+        }
+      }
     }
-  }, [chart, theme])
+    
+    renderDiagram()
+  }, [chart, theme, id])
 
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.2, 3))
   const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.2, 0.5))
@@ -69,10 +108,8 @@ const MermaidComponent = ({ chart, id }: MermaidComponentProps) => {
   }
 
   const handleDownload = () => {
-    const svgElement = mermaidRef.current?.querySelector('svg')
-    if (svgElement) {
-      const svgData = new XMLSerializer().serializeToString(svgElement)
-      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
+    if (svgContent) {
+      const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' })
       const url = URL.createObjectURL(svgBlob)
       const link = document.createElement('a')
       link.href = url
@@ -155,6 +192,7 @@ const MermaidComponent = ({ chart, id }: MermaidComponentProps) => {
 }
 
 function App() {
+  const [isEditorCollapsed, setIsEditorCollapsed] = useState(false)
   const [markdown, setMarkdown] = useState(`# 🚀 Welcome to README Reader Pro
 
 The ultimate markdown viewer with **advanced Mermaid diagram support**!
@@ -226,17 +264,26 @@ sequenceDiagram
 - 📋 User Journey
 - 🔄 GitGraph
 
-**Try editing this content or paste your own README!**`)
+**Try editing this content or paste your own README!**
 
-  const [diagramCounter, setDiagramCounter] = useState(0)
+## 🧪 Simple Test Diagram
+
+\`\`\`mermaid
+graph LR
+    A[Start] --> B[Process]
+    B --> C[End]
+\`\`\`
+
+This should render as a simple flowchart above.`)
+
+  const diagramCounterRef = useRef(0)
 
   const renderCodeBlock = ({ node, inline, className, children, ...props }: any) => {
     const match = /language-(\w+)/.exec(className || '')
     const language = match ? match[1] : ''
     
     if (language === 'mermaid') {
-      const currentId = `mermaid-${diagramCounter}`
-      setDiagramCounter(prev => prev + 1)
+      const currentId = `${diagramCounterRef.current++}`
       return <MermaidComponent chart={String(children).replace(/\n$/, '')} id={currentId} />
     }
     
@@ -263,26 +310,51 @@ sequenceDiagram
         </div>
       </header>
       
-      <div className="main-content">
-        <div className="editor-panel">
+      <div className={`main-content ${isEditorCollapsed ? 'editor-collapsed' : ''}`}>
+        <div className={`editor-panel ${isEditorCollapsed ? 'collapsed' : ''}`}>
           <div className="panel-header">
             <h3>📝 Markdown Editor</h3>
-            <div className="editor-stats">
-              {markdown.split('\n').length} lines • {markdown.length} chars
+            <div className="editor-controls">
+              {!isEditorCollapsed && (
+                <div className="editor-stats">
+                  {markdown.split('\n').length} lines • {markdown.length} chars
+                </div>
+              )}
+              <button 
+                onClick={() => setIsEditorCollapsed(!isEditorCollapsed)}
+                className="collapse-btn"
+                title={isEditorCollapsed ? "Expand Editor" : "Collapse Editor"}
+              >
+                {isEditorCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+              </button>
             </div>
           </div>
-          <textarea
-            value={markdown}
-            onChange={(e) => setMarkdown(e.target.value)}
-            placeholder="Paste your markdown content here..."
-            className="markdown-input"
-          />
+          {!isEditorCollapsed && (
+            <textarea
+              value={markdown}
+              onChange={(e) => setMarkdown(e.target.value)}
+              placeholder="Paste your markdown content here..."
+              className="markdown-input"
+            />
+          )}
         </div>
         
         <div className="preview-panel">
           <div className="panel-header">
-            <h3>👀 Live Preview</h3>
-            <div className="preview-badge">Real-time</div>
+            <div className="preview-header-content">
+              {isEditorCollapsed && (
+                <button 
+                  onClick={() => setIsEditorCollapsed(false)}
+                  className="expand-editor-btn"
+                  title="Expand Editor"
+                >
+                  <ChevronRight size={16} />
+                  <span>Show Editor</span>
+                </button>
+              )}
+              <h3>👀 Live Preview</h3>
+              <div className="preview-badge">Real-time</div>
+            </div>
           </div>
           <div className="markdown-output">
             <ReactMarkdown
