@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import mermaid from 'mermaid'
-import { ZoomIn, ZoomOut, Move, Maximize2, Eye, Copy, Download, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { ZoomIn, ZoomOut, Move, Maximize2, Eye, Copy, Download, ChevronRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import './App.css'
 
 mermaid.initialize({ 
@@ -42,7 +42,7 @@ const MermaidComponent = ({ chart, id }: MermaidComponentProps) => {
           // Configure mermaid with current theme
           mermaid.initialize({ 
             startOnLoad: false,
-            theme: theme,
+            theme: theme as 'default' | 'base' | 'dark' | 'forest' | 'neutral' | 'null',
             securityLevel: 'loose',
             fontFamily: 'system-ui, -apple-system, sans-serif',
             fontSize: 16
