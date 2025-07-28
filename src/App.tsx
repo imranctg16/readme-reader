@@ -300,16 +300,24 @@ This renders as a simple three-node flowchart above.`
     const handleScroll = () => {
       if (scrollContainerRef.current) {
         const scrollTop = scrollContainerRef.current.scrollTop
-        setShowBackToTop(scrollTop > 300)
+        setShowBackToTop(scrollTop > 200)
       }
     }
+
+    // Initial check
+    setTimeout(() => {
+      if (scrollContainerRef.current) {
+        const scrollTop = scrollContainerRef.current.scrollTop
+        setShowBackToTop(scrollTop > 200)
+      }
+    }, 100)
 
     const scrollContainer = scrollContainerRef.current
     if (scrollContainer) {
       scrollContainer.addEventListener('scroll', handleScroll)
       return () => scrollContainer.removeEventListener('scroll', handleScroll)
     }
-  }, [])
+  }, [activeTabId]) // Re-run when tab changes
 
   const addTab = () => {
     const newTab: Tab = {
