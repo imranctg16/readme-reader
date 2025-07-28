@@ -436,6 +436,7 @@
   background: var(--surface-hover);
   text-align: left;
   scroll-behavior: smooth;
+  max-height: calc(100vh - 300px); /* Constrain height to make it scrollable */
 }
 
 .markdown-output::-webkit-scrollbar {
@@ -836,6 +837,13 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  border-bottom: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-title {
+  flex: 1;
   padding: 0.75rem 1rem;
   border: none;
   background: transparent;
@@ -845,9 +853,7 @@
   font-weight: 500;
   white-space: nowrap;
   transition: var(--transition);
-  border-bottom: 2px solid transparent;
-  position: relative;
-  overflow: hidden;
+  text-align: left;
 }
 
 .tab::before {
@@ -862,7 +868,7 @@
   transition: var(--transition);
 }
 
-.tab:hover {
+.tab:hover .tab-title {
   color: var(--text-primary);
   transform: translateY(-1px);
 }
@@ -872,10 +878,12 @@
 }
 
 .tab.active {
-  color: var(--accent);
   border-bottom-color: var(--accent);
+}
+
+.tab.active .tab-title {
+  color: var(--accent);
   font-weight: 600;
-  position: relative;
 }
 
 .tab.active::after {
@@ -904,17 +912,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: transparent;
+  border: none;
+  background: rgba(0, 0, 0, 0.05);
   color: var(--text-muted);
+  cursor: pointer;
   transition: var(--transition);
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+  z-index: 10;
+  position: relative;
 }
 
 .tab-close:hover {
   background: var(--error);
   color: white;
+  transform: scale(1.1);
 }
 
 .add-tab {

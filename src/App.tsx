@@ -300,22 +300,23 @@ This renders as a simple three-node flowchart above.`
     const handleScroll = () => {
       if (scrollContainerRef.current) {
         const scrollTop = scrollContainerRef.current.scrollTop
-        setShowBackToTop(scrollTop > 200)
+        setShowBackToTop(scrollTop > 100)
       }
     }
 
-    // Initial check
-    setTimeout(() => {
-      if (scrollContainerRef.current) {
-        const scrollTop = scrollContainerRef.current.scrollTop
-        setShowBackToTop(scrollTop > 200)
-      }
-    }, 100)
-
     const scrollContainer = scrollContainerRef.current
     if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', handleScroll)
-      return () => scrollContainer.removeEventListener('scroll', handleScroll)
+      // Check initial scroll position
+      const scrollTop = scrollContainer.scrollTop
+      setShowBackToTop(scrollTop > 100)
+      
+      // Add scroll listener
+      scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
+      
+      // Cleanup function
+      return () => {
+        scrollContainer.removeEventListener('scroll', handleScroll)
+      }
     }
   }, [activeTabId]) // Re-run when tab changes
 
@@ -399,24 +400,30 @@ graph TD
       <div className="tabs-container">
         <div className="tabs-list">
           {tabs.map(tab => (
-            <button
+            <div
               key={tab.id}
               className={`tab ${tab.id === activeTabId ? 'active' : ''}`}
-              onClick={() => setActiveTabId(tab.id)}
             >
-              <span>{tab.title}</span>
+              <button
+                className="tab-title"
+                onClick={() => setActiveTabId(tab.id)}
+              >
+                <span>{tab.title}</span>
+              </button>
               {tabs.length > 1 && (
                 <button
                   className="tab-close"
                   onClick={(e) => {
+                    e.preventDefault()
                     e.stopPropagation()
                     closeTab(tab.id)
                   }}
+                  title="Close tab"
                 >
-                  <X size={12} />
+                  <X size={16} />
                 </button>
               )}
-            </button>
+            </div>
           ))}
           <button className="add-tab" onClick={addTab}>
             <Plus size={16} />
