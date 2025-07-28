@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import mermaid from 'mermaid'
-import { ZoomIn, ZoomOut, Move, Maximize2, Eye, Copy, Download, ChevronRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { ZoomIn, ZoomOut, Move, Maximize2, Eye, Copy, Download, ChevronRight, PanelLeftClose, PanelLeftOpen, ChevronUp, Plus, X } from 'lucide-react'
 import './App.css'
 
 mermaid.initialize({ 
@@ -191,56 +191,67 @@ const MermaidComponent = ({ chart, id }: MermaidComponentProps) => {
   )
 }
 
+interface Tab {
+  id: string;
+  title: string;
+  content: string;
+}
+
 function App() {
   const [isEditorCollapsed, setIsEditorCollapsed] = useState(false)
-  const [markdown, setMarkdown] = useState(`# 🚀 Welcome to README Reader Pro
+  const [tabs, setTabs] = useState<Tab[]>([
+    {
+      id: '1',
+      title: 'README.md',
+      content: `# README Reader Pro
 
-The ultimate markdown viewer with **advanced Mermaid diagram support**!
+A professional markdown viewer with advanced Mermaid diagram support.
 
-## ✨ Key Features
-- 🎨 **Beautiful Modern Design** - Clean and professional interface
-- 📊 **Interactive Diagrams** - Zoom, pan, and fullscreen support
-- 🎯 **Multi-theme Support** - Choose from multiple diagram themes
-- 📱 **Fully Responsive** - Perfect on any device
-- ⚡ **Real-time Preview** - Instant markdown rendering
-- 🔄 **Export Options** - Download diagrams as SVG
-- 📋 **Copy Support** - Easy diagram code copying
+## Key Features
+- **Clean Modern Design** - Professional and intuitive interface
+- **Interactive Diagrams** - Zoom, pan, and fullscreen capabilities
+- **Multi-theme Support** - Various diagram themes available
+- **Fully Responsive** - Optimized for all devices
+- **Real-time Preview** - Instant markdown rendering
+- **Export Options** - Download diagrams as SVG
+- **Copy Support** - Easy diagram code copying
+- **Multi-tab Support** - Work with multiple README files
 
-## 🌟 Advanced Mermaid Features
+## Advanced Mermaid Features
 
 Try these interactive controls on the diagram below:
-- **Zoom**: Use +/- buttons or mouse wheel
-- **Pan**: Click and drag to move around
-- **Themes**: Switch between different visual styles
+- **Zoom**: Use +/- buttons for scale adjustment
+- **Pan**: Click and drag to navigate
+- **Themes**: Switch between visual styles
 - **Fullscreen**: Expand for detailed viewing
-- **Export**: Download as SVG or copy code
+- **Export**: Download as SVG or copy source code
 
 \`\`\`mermaid
 graph TB
-    A[📝 Paste Markdown] --> B{🔍 Contains Mermaid?}
-    B -->|Yes| C[🎨 Render Interactive Diagram]
-    B -->|No| D[📖 Render Standard Markdown]
-    C --> E[🔧 Add Controls & Features]
-    E --> F[✨ Beautiful Display]
+    A[Paste Markdown] --> B{Contains Mermaid?}
+    B -->|Yes| C[Render Interactive Diagram]
+    B -->|No| D[Render Standard Markdown]
+    C --> E[Add Controls & Features]
+    E --> F[Beautiful Display]
     D --> F
-    F --> G[🎯 Perfect Result!]
+    F --> G[Perfect Result]
     
-    style A fill:#e1f5fe
+    style A fill:#e3f2fd
     style C fill:#f3e5f5
     style E fill:#e8f5e8
     style F fill:#fff3e0
     style G fill:#ffebee
 \`\`\`
 
-## 🎯 More Complex Diagram Example
+## Complex Diagram Example
 
 \`\`\`mermaid
 sequenceDiagram
-    participant U as 👤 User
-    participant E as 📝 Editor
-    participant P as 🔍 Parser
-    participant R as 🎨 Renderer
-    participant D as 📊 Diagram
+    participant U as User
+    participant E as Editor
+    participant P as Parser
+    participant R as Renderer
+    participant D as Diagram
     
     U->>E: Types markdown
     E->>P: Send content
@@ -253,20 +264,20 @@ sequenceDiagram
     Note over D: Interactive controls
 \`\`\`
 
-## 🛠️ Supported Diagram Types
+## Supported Diagram Types
 
-- 📊 Flowcharts & Graphs
-- 🔄 Sequence Diagrams  
-- 📈 Gantt Charts
-- 🏛️ Class Diagrams
-- 🗺️ State Diagrams
-- 🌐 Entity Relationship
-- 📋 User Journey
-- 🔄 GitGraph
+- Flowcharts & Graphs
+- Sequence Diagrams  
+- Gantt Charts
+- Class Diagrams
+- State Diagrams
+- Entity Relationship
+- User Journey
+- GitGraph
 
-**Try editing this content or paste your own README!**
+**Try editing this content or paste your own README files using the tab system!**
 
-## 🧪 Simple Test Diagram
+## Simple Test Diagram
 
 \`\`\`mermaid
 graph LR
@@ -274,9 +285,76 @@ graph LR
     B --> C[End]
 \`\`\`
 
-This should render as a simple flowchart above.`)
+This renders as a simple three-node flowchart above.`
+    }
+  ])
+  const [activeTabId, setActiveTabId] = useState('1')
+  const [showBackToTop, setShowBackToTop] = useState(false)
 
   const diagramCounterRef = useRef(0)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  const activeTab = tabs.find(tab => tab.id === activeTabId) || tabs[0]
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (scrollContainerRef.current) {
+        const scrollTop = scrollContainerRef.current.scrollTop
+        setShowBackToTop(scrollTop > 300)
+      }
+    }
+
+    const scrollContainer = scrollContainerRef.current
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll)
+      return () => scrollContainer.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
+
+  const addTab = () => {
+    const newTab: Tab = {
+      id: Date.now().toString(),
+      title: `README-${tabs.length + 1}.md`,
+      content: `# New README File
+
+Start writing your markdown content here...
+
+\`\`\`mermaid
+graph TD
+    A[New Document] --> B[Edit Content]
+    B --> C[Preview Result]
+\`\`\`
+`
+    }
+    setTabs([...tabs, newTab])
+    setActiveTabId(newTab.id)
+  }
+
+  const closeTab = (tabId: string) => {
+    if (tabs.length === 1) return // Don't close the last tab
+    
+    const newTabs = tabs.filter(tab => tab.id !== tabId)
+    setTabs(newTabs)
+    
+    if (activeTabId === tabId) {
+      setActiveTabId(newTabs[0].id)
+    }
+  }
+
+  const updateTabContent = (content: string) => {
+    setTabs(tabs.map(tab => 
+      tab.id === activeTabId ? { ...tab, content } : tab
+    ))
+  }
+
+  const scrollToTop = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
+    }
+  }
 
   const renderCodeBlock = ({ node, inline, className, children, ...props }: any) => {
     const match = /language-(\w+)/.exec(className || '')
@@ -299,25 +377,53 @@ This should render as a simple flowchart above.`)
       <header className="header">
         <div className="header-content">
           <div className="header-title">
-            <h1>📖 README Reader Pro</h1>
+            <h1>README Reader Pro</h1>
             <div className="header-badges">
               <span className="badge">Mermaid Enabled</span>
               <span className="badge">Interactive</span>
-              <span className="badge">No Login</span>
+              <span className="badge">Multi-tab</span>
             </div>
           </div>
           <p>Professional markdown viewer with advanced diagram capabilities</p>
         </div>
       </header>
       
+      <div className="tabs-container">
+        <div className="tabs-list">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              className={`tab ${tab.id === activeTabId ? 'active' : ''}`}
+              onClick={() => setActiveTabId(tab.id)}
+            >
+              <span>{tab.title}</span>
+              {tabs.length > 1 && (
+                <button
+                  className="tab-close"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    closeTab(tab.id)
+                  }}
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </button>
+          ))}
+          <button className="add-tab" onClick={addTab}>
+            <Plus size={16} />
+          </button>
+        </div>
+      </div>
+      
       <div className={`main-content ${isEditorCollapsed ? 'editor-collapsed' : ''}`}>
         <div className={`editor-panel ${isEditorCollapsed ? 'collapsed' : ''}`}>
           <div className="panel-header">
-            <h3>📝 Markdown Editor</h3>
+            <h3>Markdown Editor</h3>
             <div className="editor-controls">
               {!isEditorCollapsed && (
                 <div className="editor-stats">
-                  {markdown.split('\n').length} lines • {markdown.length} chars
+                  {activeTab.content.split('\n').length} lines • {activeTab.content.length} chars
                 </div>
               )}
               <button 
@@ -331,8 +437,8 @@ This should render as a simple flowchart above.`)
           </div>
           {!isEditorCollapsed && (
             <textarea
-              value={markdown}
-              onChange={(e) => setMarkdown(e.target.value)}
+              value={activeTab.content}
+              onChange={(e) => updateTabContent(e.target.value)}
               placeholder="Paste your markdown content here..."
               className="markdown-input"
             />
@@ -352,22 +458,30 @@ This should render as a simple flowchart above.`)
                   <span>Show Editor</span>
                 </button>
               )}
-              <h3>👀 Live Preview</h3>
+              <h3>Live Preview</h3>
               <div className="preview-badge">Real-time</div>
             </div>
           </div>
-          <div className="markdown-output">
+          <div className="markdown-output" ref={scrollContainerRef}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
                 code: renderCodeBlock
               }}
             >
-              {markdown}
+              {activeTab.content}
             </ReactMarkdown>
           </div>
         </div>
       </div>
+      
+      <button 
+        className={`back-to-top ${showBackToTop ? 'visible' : ''}`}
+        onClick={scrollToTop}
+        title="Back to top"
+      >
+        <ChevronUp size={20} />
+      </button>
     </div>
   )
 }
