@@ -81,23 +81,51 @@
 .header-content {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem 2rem;
   text-align: center;
 }
 
-.header-title {
+.header-logo {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.logo-icon {
+  position: relative;
+  background: var(--accent-gradient);
+  border-radius: var(--border-radius);
+  padding: 0.5rem;
+  color: white;
+  box-shadow: var(--shadow-colored);
+  animation: zoomIn 0.6s ease-out 0.2s both;
+}
+
+.logo-accent {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--success-gradient);
+  border-radius: 50%;
+  padding: 0.25rem;
+  color: white;
+  box-shadow: var(--shadow-md);
+  animation: bounceIn 0.8s ease-out 0.6s both;
+}
+
+.header-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .header h1 {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 3rem);
-  font-weight: 800;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
   background: var(--accent-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -135,9 +163,12 @@
 }
 
 .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
   background: var(--accent-gradient);
   color: white;
-  padding: 0.25rem 0.75rem;
+  padding: 0.375rem 0.875rem;
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -145,6 +176,24 @@
   animation: fadeInUp 0.6s ease-out var(--stagger-delay, 0.2s) both;
   position: relative;
   overflow: hidden;
+  transition: var(--transition-fast);
+}
+
+.badge:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.badge-primary {
+  background: var(--accent-gradient);
+}
+
+.badge-success {
+  background: var(--success-gradient);
+}
+
+.badge-info {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
 }
 
 .badge::before {
@@ -177,10 +226,10 @@
   }
 }
 
-.header p {
+.header-description {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 1.125rem;
+  font-size: 0.95rem;
   font-weight: 400;
   animation: fadeInUp 0.6s ease-out 0.5s both;
   position: relative;
@@ -1018,9 +1067,13 @@
     padding: 1.5rem;
   }
   
-  .header-title {
+  .header-logo {
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1rem;
+  }
+  
+  .header-title {
+    gap: 0.5rem;
   }
   
   .header h1 {

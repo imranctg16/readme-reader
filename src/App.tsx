@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import mermaid from 'mermaid'
-import { ZoomIn, ZoomOut, Move, Maximize2, Eye, Copy, Download, ChevronRight, PanelLeftClose, PanelLeftOpen, ChevronUp, Plus, X } from 'lucide-react'
+import { ZoomIn, ZoomOut, Move, Maximize2, Eye, Copy, Download, ChevronRight, PanelLeftClose, PanelLeftOpen, ChevronUp, Plus, X, FileText, Zap, Layers } from 'lucide-react'
 import './App.css'
 
 mermaid.initialize({ 
@@ -203,7 +203,7 @@ function App() {
     {
       id: '1',
       title: 'README.md',
-      content: `# README Reader Pro
+      content: `# Readme Reader
 
 A professional markdown viewer with advanced Mermaid diagram support.
 
@@ -385,15 +385,31 @@ graph TD
     <div className="app">
       <header className="header">
         <div className="header-content">
-          <div className="header-title">
-            <h1>README Reader Pro</h1>
-            <div className="header-badges">
-              <span className="badge">Mermaid Enabled</span>
-              <span className="badge">Interactive</span>
-              <span className="badge">Multi-tab</span>
+          <div className="header-logo">
+            <div className="logo-icon">
+              <FileText size={28} />
+              <div className="logo-accent">
+                <Zap size={14} />
+              </div>
+            </div>
+            <div className="header-title">
+              <h1>Readme Reader</h1>
+              <div className="header-badges">
+                <span className="badge badge-primary">
+                  <Layers size={12} />
+                  Mermaid
+                </span>
+                <span className="badge badge-success">
+                  <Zap size={12} />
+                  Interactive
+                </span>
+                <span className="badge badge-info">Multi-tab</span>
+              </div>
             </div>
           </div>
-          <p>Professional markdown viewer with advanced diagram capabilities</p>
+          <p className="header-description">
+            Professional markdown viewer with advanced diagram capabilities
+          </p>
         </div>
       </header>
       
