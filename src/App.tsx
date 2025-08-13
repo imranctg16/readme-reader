@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import mermaid from 'mermaid'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { ZoomIn, ZoomOut, Move, Maximize2, Eye, Copy, Download, ChevronRight, PanelLeftClose, PanelLeftOpen, ChevronUp, Plus, X, FileText, Zap, Layers } from 'lucide-react'
 import './App.css'
 
@@ -205,17 +207,124 @@ function App() {
       title: 'README.md',
       content: `# Readme Reader
 
-A professional markdown viewer with advanced Mermaid diagram support.
+A professional markdown viewer with advanced Mermaid diagram support and IDE-like syntax highlighting.
 
 ## Key Features
 - **Clean Modern Design** - Professional and intuitive interface
 - **Interactive Diagrams** - Zoom, pan, and fullscreen capabilities
+- **IDE-like Syntax Highlighting** - Beautiful code blocks with line numbers
 - **Multi-theme Support** - Various diagram themes available
 - **Fully Responsive** - Optimized for all devices
 - **Real-time Preview** - Instant markdown rendering
 - **Export Options** - Download diagrams as SVG
 - **Copy Support** - Easy diagram code copying
 - **Multi-tab Support** - Work with multiple README files
+
+## Code Syntax Highlighting Examples
+
+### TypeScript/JavaScript
+\`\`\`typescript
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+const fetchUser = async (id: number): Promise<User> => {
+  const response = await fetch(\`/api/users/\${id}\`);
+  return response.json();
+};
+
+class UserManager {
+  private users: Map<number, User> = new Map();
+  
+  async addUser(user: User): Promise<void> {
+    this.users.set(user.id, user);
+    await this.saveToDatabase(user);
+  }
+}
+\`\`\`
+
+### Python
+\`\`\`python
+import asyncio
+from typing import List, Optional
+
+class DataProcessor:
+    def __init__(self, config: dict):
+        self.config = config
+        self.cache = {}
+    
+    async def process_data(self, items: List[str]) -> Optional[dict]:
+        """Process a list of items and return results."""
+        results = {}
+        
+        for item in items:
+            if item in self.cache:
+                results[item] = self.cache[item]
+            else:
+                processed = await self._process_item(item)
+                self.cache[item] = processed
+                results[item] = processed
+        
+        return results if results else None
+
+# Usage example
+processor = DataProcessor({"batch_size": 100})
+data = await processor.process_data(["item1", "item2", "item3"])
+\`\`\`
+
+### JSON Configuration
+\`\`\`json
+{
+  "name": "readme-reader",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-syntax-highlighter": "^15.6.1",
+    "mermaid": "^11.9.0"
+  },
+  "features": {
+    "syntaxHighlighting": true,
+    "lineNumbers": true,
+    "themes": ["vscode-dark", "github", "atom"]
+  }
+}
+\`\`\`
+
+### Bash/Shell
+\`\`\`bash
+#!/bin/bash
+
+# Install dependencies
+npm install react-syntax-highlighter
+
+# Build the project
+npm run build
+
+# Deploy to production
+if [ "$NODE_ENV" = "production" ]; then
+    echo "Deploying to production..."
+    npm run deploy
+    
+    # Cleanup
+    rm -rf dist/temp
+    find . -name "*.log" -delete
+fi
+
+# Check if deployment was successful
+if [ $? -eq 0 ]; then
+    echo "✅ Deployment successful!"
+else
+    echo "❌ Deployment failed!"
+    exit 1
+fi
+\`\`\`
 
 ## Advanced Mermaid Features
 
@@ -228,64 +337,84 @@ Try these interactive controls on the diagram below:
 
 \`\`\`mermaid
 graph TB
-    A[Paste Markdown] --> B{Contains Mermaid?}
-    B -->|Yes| C[Render Interactive Diagram]
-    B -->|No| D[Render Standard Markdown]
-    C --> E[Add Controls & Features]
-    E --> F[Beautiful Display]
-    D --> F
-    F --> G[Perfect Result]
+    A[Paste Markdown] --> B{Contains Code?}
+    B -->|Yes| C[Apply Syntax Highlighting]
+    B -->|Mermaid| D[Render Interactive Diagram]
+    B -->|Plain Text| E[Render Standard Markdown]
+    C --> F[Beautiful Code Display]
+    D --> G[Interactive Controls]
+    E --> H[Simple Text]
+    F --> I[Perfect Result]
+    G --> I
+    H --> I
     
     style A fill:#e3f2fd
     style C fill:#f3e5f5
-    style E fill:#e8f5e8
+    style D fill:#e8f5e8
     style F fill:#fff3e0
-    style G fill:#ffebee
+    style I fill:#ffebee
 \`\`\`
 
-## Complex Diagram Example
+## More Language Examples
 
-\`\`\`mermaid
-sequenceDiagram
-    participant U as User
-    participant E as Editor
-    participant P as Parser
-    participant R as Renderer
-    participant D as Diagram
-    
-    U->>E: Types markdown
-    E->>P: Send content
-    P->>P: Parse markdown
-    P->>R: Send parsed data
-    R->>D: Render mermaid
-    D->>U: Display result
-    
-    Note over U,D: Real-time updates
-    Note over D: Interactive controls
+### CSS
+\`\`\`css
+.syntax-highlighter {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.code-block {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .syntax-highlighter {
+    padding: 0.5rem;
+    font-size: 12px;
+  }
+}
 \`\`\`
 
-## Supported Diagram Types
+### SQL
+\`\`\`sql
+-- Create users table with indexes
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-- Flowcharts & Graphs
-- Sequence Diagrams  
-- Gantt Charts
-- Class Diagrams
-- State Diagrams
-- Entity Relationship
-- User Journey
-- GitGraph
+-- Create index for faster lookups
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_created_at ON users(created_at);
 
-**Try editing this content or paste your own README files using the tab system!**
+-- Insert sample data
+INSERT INTO users (username, email) VALUES 
+    ('john_doe', 'john@example.com'),
+    ('jane_smith', 'jane@example.com');
 
-## Simple Test Diagram
-
-\`\`\`mermaid
-graph LR
-    A[Start] --> B[Process]
-    B --> C[End]
+-- Complex query with joins
+SELECT 
+    u.username,
+    u.email,
+    COUNT(p.id) as post_count
+FROM users u
+LEFT JOIN posts p ON u.id = p.user_id
+WHERE u.created_at > '2024-01-01'
+GROUP BY u.id, u.username, u.email
+HAVING COUNT(p.id) > 5
+ORDER BY post_count DESC;
 \`\`\`
 
-This renders as a simple three-node flowchart above.`
+**Try editing this content or paste your own README files to see the syntax highlighting in action!**`
     }
   ])
   const [activeTabId, setActiveTabId] = useState('1')
@@ -372,6 +501,26 @@ graph TD
     if (language === 'mermaid') {
       const currentId = `${diagramCounterRef.current++}`
       return <MermaidComponent chart={String(children).replace(/\n$/, '')} id={currentId} />
+    }
+    
+    if (!inline && language) {
+      return (
+        <SyntaxHighlighter
+          language={language}
+          style={vscDarkPlus}
+          customStyle={{
+            margin: '1rem 0',
+            borderRadius: '8px',
+            fontSize: '14px',
+            lineHeight: '1.5'
+          }}
+          showLineNumbers={true}
+          wrapLines={true}
+          {...props}
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      )
     }
     
     return (
