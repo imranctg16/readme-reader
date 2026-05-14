@@ -245,7 +245,7 @@ const compressText = async (content: string): Promise<string> => {
 const decompressText = async (value: string): Promise<string> => {
   const [encoding, payload] = value.split('.', 2)
   if (!encoding || !payload) {
-    throw new Error('Invalid share payload')
+    throw new Error('Invalid share link format. Expected format: [encoding].[data]')
   }
 
   const bytes = decodeBase64Url(payload)
@@ -269,6 +269,33 @@ const decompressText = async (value: string): Promise<string> => {
   }
 
   throw new Error('Unsupported share encoding')
+}
+
+let sharedTabIdCounter = 0
+
+const createUniqueTabId = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+
+  sharedTabIdCounter += 1
+  return `shared-${Date.now()}-${sharedTabIdCounter}`
+}
+
+const getShareErrorMessage = (error: unknown, action: 'load' | 'share'): string => {
+  if (error instanceof Error) {
+    if (error.message.includes('Invalid share link format')) {
+      return 'Malformed share link'
+    }
+    if (error.message.includes('cannot open compressed')) {
+      return 'This browser cannot open compressed share links'
+    }
+    if (action === 'share' && error.message.toLowerCase().includes('clipboard')) {
+      return 'Clipboard permission denied'
+    }
+  }
+
+  return action === 'load' ? 'Unable to open share link' : 'Failed to copy share link'
 }
 
 function App() {
@@ -495,34 +522,86 @@ ORDER BY post_count DESC;
 
   const diagramCounterRef = useRef(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const shareStatusTimeoutRef = useRef<number | null>(null)
 
   const activeTab = tabs.find(tab => tab.id === activeTabId) || tabs[0]
 
+  const updateShareStatus = useCallback((message: string) => {
+    setShareStatus(message)
+
+    if (shareStatusTimeoutRef.current) {
+      window.clearTimeout(shareStatusTimeoutRef.current)
+    }
+
+    shareStatusTimeoutRef.current = window.setTimeout(() => {
+      setShareStatus('')
+      shareStatusTimeoutRef.current = null
+    }, 3000)
+  }, [])
+
   useEffect(() => {
+    return () => {
+      if (shareStatusTimeoutRef.current) {
+        window.clearTimeout(shareStatusTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
     const loadSharedContent = async () => {
       const searchParams = new URLSearchParams(window.location.search)
       const sharedValue = searchParams.get('share')
       if (!sharedValue) return
 
       try {
-        const decodedContent = await decompressText(sharedValue)
+        const decodedPayload = await decompressText(sharedValue)
+        let sharedTitle = 'Shared README.md'
+        let decodedContent = decodedPayload
+
+        try {
+          const parsedPayload = JSON.parse(decodedPayload) as { title?: unknown; content?: unknown }
+          if (typeof parsedPayload.content === 'string') {
+            decodedContent = parsedPayload.content
+          }
+          if (typeof parsedPayload.title === 'string' && parsedPayload.title.trim()) {
+            sharedTitle = parsedPayload.title
+          }
+        } catch (parseError) {
+          console.info('Loaded legacy shared payload format:', parseError)
+          // Backward compatibility: plain markdown payloads are still supported.
+        }
+
         const sharedTab: Tab = {
-          id: `shared-${Date.now()}`,
-          title: 'Shared README.md',
+          id: createUniqueTabId(),
+          title: sharedTitle,
           content: decodedContent
         }
 
+        if (!isMounted) return
+
         setTabs(prevTabs => [...prevTabs, sharedTab])
         setActiveTabId(sharedTab.id)
-        setShareStatus('Shared content loaded')
+        updateShareStatus('Shared content loaded')
+
+        searchParams.delete('share')
+        const nextSearch = searchParams.toString()
+        const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`
+        window.history.replaceState({}, '', nextUrl)
       } catch (error) {
         console.error('Failed to load shared content:', error)
-        setShareStatus('Invalid or unsupported share link')
+        if (!isMounted) return
+        updateShareStatus(getShareErrorMessage(error, 'load'))
       }
     }
 
     loadSharedContent()
-  }, [])
+
+    return () => {
+      isMounted = false
+    }
+  }, [updateShareStatus])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -595,15 +674,18 @@ graph TD
 
   const handleShare = async () => {
     try {
-      const encodedContent = await compressText(activeTab.content)
+      const encodedContent = await compressText(JSON.stringify({
+        title: activeTab.title,
+        content: activeTab.content
+      }))
       const url = new URL(window.location.href)
       url.searchParams.set('share', encodedContent)
       const shareLink = url.toString()
       await navigator.clipboard.writeText(shareLink)
-      setShareStatus('Share link copied')
+      updateShareStatus('Share link copied')
     } catch (error) {
       console.error('Failed to create share link:', error)
-      setShareStatus('Failed to copy share link')
+      updateShareStatus(getShareErrorMessage(error, 'share'))
     }
   }
 
