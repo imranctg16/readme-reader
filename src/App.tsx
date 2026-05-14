@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import mermaid from 'mermaid'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import { ZoomIn, ZoomOut, Move, Maximize2, Eye, Copy, Download, ChevronRight, PanelLeftClose, PanelLeftOpen, ChevronUp, Plus, X, FileText, Zap, Layers } from 'lucide-react'
+import { ZoomIn, ZoomOut, Move, Maximize2, Eye, Copy, Download, ChevronRight, PanelLeftClose, PanelLeftOpen, ChevronUp, Plus, X, FileText, Zap, Layers, Link2 } from 'lucide-react'
 import './App.css'
 
 mermaid.initialize({ 
@@ -197,6 +197,78 @@ interface Tab {
   id: string;
   title: string;
   content: string;
+}
+
+interface CodeBlockProps {
+  inline?: boolean;
+  className?: string;
+  children?: ReactNode;
+}
+
+const encodeBase64Url = (bytes: Uint8Array): string => {
+  let binary = ''
+  bytes.forEach(byte => {
+    binary += String.fromCharCode(byte)
+  })
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+}
+
+const decodeBase64Url = (value: string): Uint8Array => {
+  const normalizedValue = value.replace(/-/g, '+').replace(/_/g, '/')
+  const padding = '='.repeat((4 - (normalizedValue.length % 4)) % 4)
+  const binary = atob(`${normalizedValue}${padding}`)
+  const bytes = new Uint8Array(binary.length)
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index)
+  }
+
+  return bytes
+}
+
+const compressText = async (content: string): Promise<string> => {
+  const rawBytes = new TextEncoder().encode(content)
+
+  if (typeof CompressionStream === 'undefined') {
+    return `p.${encodeBase64Url(rawBytes)}`
+  }
+
+  const stream = new CompressionStream('gzip')
+  const writer = stream.writable.getWriter()
+  await writer.write(rawBytes)
+  await writer.close()
+
+  const compressedBytes = new Uint8Array(await new Response(stream.readable).arrayBuffer())
+  return `g.${encodeBase64Url(compressedBytes)}`
+}
+
+const decompressText = async (value: string): Promise<string> => {
+  const [encoding, payload] = value.split('.', 2)
+  if (!encoding || !payload) {
+    throw new Error('Invalid share payload')
+  }
+
+  const bytes = decodeBase64Url(payload)
+
+  if (encoding === 'p') {
+    return new TextDecoder().decode(bytes)
+  }
+
+  if (encoding === 'g') {
+    if (typeof DecompressionStream === 'undefined') {
+      throw new Error('This browser cannot open compressed shared links.')
+    }
+
+    const stream = new DecompressionStream('gzip')
+    const writer = stream.writable.getWriter()
+    await writer.write(bytes)
+    await writer.close()
+
+    const decompressedBytes = new Uint8Array(await new Response(stream.readable).arrayBuffer())
+    return new TextDecoder().decode(decompressedBytes)
+  }
+
+  throw new Error('Unsupported share encoding')
 }
 
 function App() {
@@ -419,11 +491,38 @@ ORDER BY post_count DESC;
   ])
   const [activeTabId, setActiveTabId] = useState('1')
   const [showBackToTop, setShowBackToTop] = useState(false)
+  const [shareStatus, setShareStatus] = useState('')
 
   const diagramCounterRef = useRef(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const activeTab = tabs.find(tab => tab.id === activeTabId) || tabs[0]
+
+  useEffect(() => {
+    const loadSharedContent = async () => {
+      const searchParams = new URLSearchParams(window.location.search)
+      const sharedValue = searchParams.get('share')
+      if (!sharedValue) return
+
+      try {
+        const decodedContent = await decompressText(sharedValue)
+        const sharedTab: Tab = {
+          id: `shared-${Date.now()}`,
+          title: 'Shared README.md',
+          content: decodedContent
+        }
+
+        setTabs(prevTabs => [...prevTabs, sharedTab])
+        setActiveTabId(sharedTab.id)
+        setShareStatus('Shared content loaded')
+      } catch (error) {
+        console.error('Failed to load shared content:', error)
+        setShareStatus('Invalid or unsupported share link')
+      }
+    }
+
+    loadSharedContent()
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -494,7 +593,21 @@ graph TD
     }
   }
 
-  const renderCodeBlock = ({ node, inline, className, children, ...props }: any) => {
+  const handleShare = async () => {
+    try {
+      const encodedContent = await compressText(activeTab.content)
+      const url = new URL(window.location.href)
+      url.searchParams.set('share', encodedContent)
+      const shareLink = url.toString()
+      await navigator.clipboard.writeText(shareLink)
+      setShareStatus('Share link copied')
+    } catch (error) {
+      console.error('Failed to create share link:', error)
+      setShareStatus('Failed to copy share link')
+    }
+  }
+
+  const renderCodeBlock = ({ inline, className, children, ...props }: CodeBlockProps) => {
     const match = /language-(\w+)/.exec(className || '')
     const language = match ? match[1] : ''
     
@@ -639,7 +752,13 @@ graph TD
                 </button>
               )}
               <h3>Live Preview</h3>
-              <div className="preview-badge">Real-time</div>
+              <div className="preview-actions">
+                <button className="share-btn" onClick={handleShare} title="Copy shareable link">
+                  <Link2 size={14} />
+                  <span>Share</span>
+                </button>
+                <div className="preview-badge">{shareStatus || 'Real-time'}</div>
+              </div>
             </div>
           </div>
           <div className="markdown-output" ref={scrollContainerRef}>
