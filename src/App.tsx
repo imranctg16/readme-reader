@@ -298,6 +298,27 @@ const getShareErrorMessage = (error: unknown, action: 'load' | 'share'): string 
   return action === 'load' ? 'Unable to open share link' : 'Failed to copy share link'
 }
 
+const copyTextWithFallback = async (value: string): Promise<boolean> => {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(value)
+    return true
+  }
+
+  const textArea = document.createElement('textarea')
+  textArea.value = value
+  textArea.setAttribute('readonly', '')
+  textArea.style.position = 'fixed'
+  textArea.style.opacity = '0'
+  textArea.style.pointerEvents = 'none'
+  document.body.appendChild(textArea)
+  textArea.focus()
+  textArea.select()
+
+  const copied = document.execCommand('copy')
+  document.body.removeChild(textArea)
+  return copied
+}
+
 function App() {
   const [isEditorCollapsed, setIsEditorCollapsed] = useState(false)
   const [tabs, setTabs] = useState<Tab[]>([
@@ -681,8 +702,33 @@ graph TD
       const url = new URL(window.location.href)
       url.searchParams.set('share', encodedContent)
       const shareLink = url.toString()
-      await navigator.clipboard.writeText(shareLink)
-      updateShareStatus('Share link copied')
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: activeTab.title,
+            text: `Shared from Readme Reader: ${activeTab.title}`,
+            url: shareLink
+          })
+          updateShareStatus('Share dialog opened')
+          return
+        } catch (shareError) {
+          if (!(shareError instanceof DOMException && shareError.name === 'AbortError')) {
+            console.info('Native share unavailable, falling back to copy:', shareError)
+          } else {
+            updateShareStatus('Share cancelled')
+            return
+          }
+        }
+      }
+
+      const copied = await copyTextWithFallback(shareLink)
+      if (copied) {
+        updateShareStatus('Share link copied')
+      } else {
+        window.prompt('Copy this share link:', shareLink)
+        updateShareStatus('Share link ready to copy')
+      }
     } catch (error) {
       console.error('Failed to create share link:', error)
       updateShareStatus(getShareErrorMessage(error, 'share'))
